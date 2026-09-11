@@ -1,85 +1,89 @@
-# Improved TIME
+# Classic TIME Template
 
-Improved TIME is the maintained, source-only layer between the public
-[TIME benchmark](https://github.com/zqiao11/TIME) and thesis experiment
-repositories. It preserves TIME's saved-Arrow dataset and GluonTS evaluation
-interfaces while collecting reusable correctness, model-adapter, covariate,
-timing, feature, and run-lifecycle improvements.
+Classic TIME Template is the reusable layer for supervised experiments on the
+established long-term forecasting datasets. It derives from Improved TIME and
+adds preparation and loading of classic panels through TIME's saved-Arrow
+schema. Experiment repositories such as
+[`classic_tsf`](https://github.com/3gaspo/classic_tsf) inherit this layer and
+own their model grids, cluster launchers, results, and conclusions.
 
-This repository is not an experiment checkout. It is not cloned onto compute
-clusters and it never publishes experiment logs or outputs. Cluster launchers,
-experiment grids, result analysis, and scientific conclusions belong in
-downstream repositories such as `evaluating_tsfms`, `adaptime`, and
-`classic_template` descendants.
+The dataset scope is Electricity, Traffic, Solar-Energy, Weather, Exchange
+Rate, ETTh1, ETTh2, ETTm1, and ETTm2. PEMS is intentionally excluded.
 
-## Installation
+## Current status
 
-The declared Python 3.12 environment is prepared by the user on the execution
-host:
+Dataset conversion and loading are implemented. The shared supervised split,
+training-window, horizon, target-mode, objective, and seed contracts have not
+yet been selected. Consequently, the catalog is preparation-ready but not a
+runnable forecasting grid, and this template claims no experimental result.
 
-```bash
-uv sync
+## Dataset preparation
+
+The shared source layout is:
+
+```text
+datasets/
+  electricity/electricity.csv
+  traffic/traffic.csv
+  solar/solar.csv
+  weather/weather.csv
+  exchange_rate/exchange_rate.csv
+  ETTh1/ETTh1.csv
+  ETTh2/ETTh2.csv
+  ETTm1/ETTm1.csv
+  ETTm2/ETTm2.csv
 ```
 
-Learned-model adapters require local checkpoints. Runtime locations use one
-portable path contract:
-
-| Variable | Default | Purpose |
-|---|---|---|
-| `TIME_DATA_ROOT` | `datasets/` | Prepared/intermediate data root |
-| `TIME_DATASET` | `datasets/hf_dataset/` | Saved-Arrow TIME datasets |
-| `TIME_METADATA` | `datasets/time_metadata/` | Dataset-derived audits and features |
-| `TIME_WEIGHTS` | `weights/` | Model checkpoints and caches |
-| `TIME_OUTPUTS` | `outputs/` | Project-owned generated artifacts |
-| `TIME_LOGS` | `logs/` | Project-owned runtime logs |
-
-The official TIME dataset can be prepared on an internet-connected host with:
+Prepare the nine panels into `datasets/classic_datasets/` with:
 
 ```bash
-PYTHONPATH=src uv run --no-sync python scripts/download_time_dataset.py \
-  --destination datasets/hf_dataset
+PYTHONPATH=src uv run --no-sync python scripts/prepare_classic_datasets.py
 ```
 
-## Reusable execution surface
+The command discovers each adjacent `config.json`, applies portable fields and
+the existing `classic_tsf` override object, and writes one multivariate
+saved-Arrow dataset per panel plus `classic_datasets/catalog.json` provenance.
+Supported source settings include timestamp/target selection, exclusions,
+aggregation, and the `zero|error` missing-value policy. Infinite values are
+rejected. Solar is aggregated to hourly sums and Weather to hourly means
+through their shared configurations.
 
-The retained Python runners are `chronos_bolt`, `chronos2`, `timesfm3`,
-`ts_icl`, and `seasonal_naive`. They expose the model and evaluation adapters
-that downstream projects compose into their own experiment workflows. The
-common layer also provides:
+For `drop_users`, omission or `null` inherits the preceding value, `[]` keeps
+all CSV columns, and a non-empty list replaces it. Exclusions are applied only
+during CSV preparation and never again by saved-Arrow consumers. Existing
+prepared datasets are preserved unless `--overwrite` is explicit.
 
-- corrected chronological train, validation, and official test boundaries;
-- deterministic Seasonal Naive quantiles and finite-pair MASE scaling;
-- explicit target-mode and covariate capability checks;
-- local-only foundation-model checkpoint loading;
-- accelerator-synchronized inference timing;
-- schema-1 task manifests, recovery, and result-selection policies;
-- compact metric summaries with finite-value coverage;
-- saved-Arrow feature extraction and reusable window auditing.
+## Runtime paths
 
-The complete divergence from upstream TIME is recorded in
-[docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md).
+Within this workspace, `TIME_DATASET` defaults to the shared
+`datasets/classic_datasets/` root and `TIME_METADATA` to
+`datasets/classic_tsf_metadata/`. Standalone checkouts resolve the same names
+below their configured `TIME_DATA_ROOT`. Weights, outputs, and logs remain
+project-scoped and ignored.
+
+The catalog at
+[`src/timebench/config/datasets.yaml`](src/timebench/config/datasets.yaml)
+contains the nine dataset/frequency keys but deliberately omits split lengths
+and terms. This prevents TIME's three `short|medium|long` labels from silently
+replacing the conventional `96/192/336/720` supervised horizons.
 
 ## Source tree
 
 ```text
-experiments/               reusable TIME model/evaluation entry points
-scripts/                   preparation and task-lifecycle utilities
-src/timebench/evaluation/  datasets, windows, metrics, timing, and saving
-src/timebench/models/      shared external-model adapters
-src/timebench/pipeline/    task manifests, recovery, and result selection
-src/timebench/feature/     dataset features and performance associations
-src/tests/                 focused reusable contract checks
-datasets/, weights/        ignored local input placeholders
-outputs/, logs/            ignored local artifact placeholders
+scripts/prepare_classic_datasets.py  CSV/config to TIME saved-Arrow front
+src/timebench/config/                classic dataset catalog
+src/timebench/evaluation/            inherited dataset/window/metric contracts
+src/timebench/pipeline/              inherited task lifecycle contracts
+src/timebench/feature/               inherited dataset diagnostics/features
+src/tests/                            common and classic preparation checks
+datasets/, weights/                   ignored input placeholders
+outputs/, logs/                       ignored artifact placeholders
 ```
 
-## Lineage
+See [architecture](docs/architecture.md),
+[dataset format](docs/DATASET_FORMAT.md),
+[experiment catalog](docs/experiment_catalog.md), and
+[method overview](latex/method_overview.tex).
 
-The repository starts from the exact Git history of `zqiao11/TIME`. Its
-fetch-only `time-template` remote is the sole upstream. Reusable changes flow
-one way from `TIME_template` to Improved TIME and then to downstream projects.
-Experiment-specific changes never flow back automatically; supported findings
-are reimplemented here as focused reusable changes before propagation.
-
-The inherited code remains under the Apache-2.0 license. Dataset licenses are
-owned by their original providers.
+The inherited TIME code remains under Apache-2.0. Dataset licenses remain
+those of their original providers and must be reviewed before redistribution.

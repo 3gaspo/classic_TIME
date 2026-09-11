@@ -194,7 +194,7 @@ class Dataset:
             Val windows is auto-calculated: floor(val_length / prediction_length)
         storage_env_var : str
             Environment variable name for dataset storage path. `TIME_DATASET`
-            falls back to `<project>/datasets/hf_dataset`; other variables must
+            falls back to the shared `datasets/classic_datasets`; other variables must
             be explicitly defined.
         storage_path : str or Path, optional
             Direct path to dataset storage. If provided, overrides storage_env_var.

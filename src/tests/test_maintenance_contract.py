@@ -1,4 +1,4 @@
-"""Dependency-light maintenance checks for the source-only Improved TIME layer."""
+"""Dependency-light maintenance checks for Classic TIME Template."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 LOCAL_LINK = re.compile(r"(?<!!)\[[^]]+\]\(([^)]+)\)")
 
 
-class ImprovedMaintenanceContractTest(unittest.TestCase):
+class ClassicTsfMaintenanceContractTest(unittest.TestCase):
     def test_python_sources_parse(self) -> None:
         roots = [PROJECT_ROOT / "src", PROJECT_ROOT / "experiments", PROJECT_ROOT / "scripts"]
         paths = sorted(path for root in roots for path in root.rglob("*.py"))
@@ -52,9 +52,39 @@ class ImprovedMaintenanceContractTest(unittest.TestCase):
             "/FUTURE_WORK.md",
             "/PENDING_UPDATES.md",
             "/CLUSTER_STATUS.txt",
+            "/docs/IMPROVEMENTS.md",
             "/docs/INTERNAL_WORKFLOW.md",
         }
         self.assertTrue(required.issubset(set(ignore)))
+
+    def test_classic_dataset_catalog_and_preparation_contract(self) -> None:
+        config = yaml.safe_load(
+            (PROJECT_ROOT / "src/timebench/config/datasets.yaml").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(
+            set(config["datasets"]),
+            {
+                "electricity/H",
+                "traffic/H",
+                "solar/H",
+                "weather/H",
+                "exchange_rate/D",
+                "ETTh1/H",
+                "ETTh2/H",
+                "ETTm1/15T",
+                "ETTm2/15T",
+            },
+        )
+        self.assertTrue(all(not settings for settings in config["datasets"].values()))
+        preparation = (PROJECT_ROOT / "scripts/prepare_classic_datasets.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('PROJECT_SCOPE = "classic_tsf"', preparation)
+        self.assertIn('options.setdefault("missing_values", "zero")', preparation)
+        self.assertIn("dataframes_to_generator", preparation)
+        self.assertNotIn("PEMS", preparation)
 
     def test_split_boundaries_use_declared_intervals(self) -> None:
         source = (PROJECT_ROOT / "src/timebench/evaluation/data.py").read_text(encoding="utf-8")
@@ -109,6 +139,8 @@ class ImprovedMaintenanceContractTest(unittest.TestCase):
         self.assertIn("if destination_has_files and not resume", downloader)
         self.assertIn("max_workers=max_workers", downloader)
         self.assertIn('destination.rglob("state.json")', downloader)
+        self.assertIn("required=True", downloader)
+        self.assertNotIn("dataset_storage_root", downloader)
 
         self.assertFalse((PROJECT_ROOT / "experiments/tirex_model.py").exists())
         self.assertFalse((PROJECT_ROOT / "scripts/run_tirex.sh").exists())

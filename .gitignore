@@ -110,6 +110,7 @@ AGENTS.md
 /PENDING_UPDATES.md
 /CLUSTER_STATUS.txt
 /docs/INTERNAL_WORKFLOW.md
+/docs/IMPROVEMENTS.md
 .venv/
 outputs/*
 !outputs/.gitkeep

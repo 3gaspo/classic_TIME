@@ -80,16 +80,17 @@ The resulting dataset can be loaded directly using the `Dataset` class from `tim
  It is strongly recommended to explicitly provide the `--freq` parameter, as pandas frequency inference (`pd.infer_freq`) may be unreliable.
 
 Additionally, place each `--output-path` below the `TIME_DATASET` root used by
-the evaluator. The local defaults are `TIME_DATA_ROOT=./datasets` and
-`TIME_DATASET=./datasets/hf_dataset`.
+the evaluator. Classic TIME Template defaults to the shared
+`datasets/classic_datasets/` root. Its preparation front applies the shared
+source configurations before calling this inherited conversion layer.
 
 * Example 1: Multiple CSVs, Each is a UTS
 
 
 ```bash
 python -m timebench.evaluation.dataset_builder \
-  --csv-dir datasets/processed_csv/CPHL/30T \
-  --output-path datasets/hf_dataset/CPHL/30T \
+  --csv-dir /shared/processed_csv/example/30T \
+  --output-path /shared/classic_datasets/example/30T \
   --freq 30T \
   --to-univariate
 ```
@@ -100,8 +101,8 @@ python -m timebench.evaluation.dataset_builder \
 ```bash
 # Example: 7 series, each has 6 variates
 python -m timebench.evaluation.dataset_builder \
-  --csv-dir datasets/processed_csv/Water_Quality_Darwin/15T \
-  --output-path datasets/hf_dataset/Water_Quality_Darwin/15T \
+  --csv-dir /shared/processed_csv/example/15T \
+  --output-path /shared/classic_datasets/example/15T \
   --freq 15T
 ```
 
@@ -110,7 +111,7 @@ python -m timebench.evaluation.dataset_builder \
 ```bash
 # Example: 1 series with 5 variates
 python -m timebench.evaluation.dataset_builder \
-  --csv-dir datasets/processed_csv/SG_PM25/H \
-  --output-path datasets/hf_dataset/SG_PM25/H \
+  --csv-dir /shared/processed_csv/example/H \
+  --output-path /shared/classic_datasets/example/H \
   --freq H
 ```

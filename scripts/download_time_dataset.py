@@ -18,9 +18,6 @@ from huggingface_hub import HfApi, snapshot_download
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from timebench.paths import dataset_storage_root
-
-
 DEFAULT_REPO_ID = "Real-TSF/TIME"
 REVISION_FILE = ".time_snapshot_revision"
 
@@ -86,8 +83,8 @@ def main() -> None:
     parser.add_argument(
         "--destination",
         type=Path,
-        default=None,
-        help="Empty target directory (default: configured TIME_DATASET)",
+        required=True,
+        help="Explicit empty target directory; never defaults to classic_datasets",
     )
     parser.add_argument("--repo-id", default=DEFAULT_REPO_ID)
     parser.add_argument("--revision", default="main")
@@ -102,7 +99,7 @@ def main() -> None:
     if args.max_workers <= 0:
         parser.error("--max-workers must be positive")
 
-    destination = args.destination or dataset_storage_root()
+    destination = args.destination
     revision, count = download_time_dataset(
         destination,
         repo_id=args.repo_id,

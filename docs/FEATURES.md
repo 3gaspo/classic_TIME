@@ -8,7 +8,7 @@ pattern-based evaluation.
 **Input**:
 - `${TIME_DATA_ROOT}/processed_csv/{dataset}/{freq}/*.csv`, where the first
   column is the timestamp and the remaining columns are variates; or
-- `${TIME_DATASET}/{dataset}/{freq}/`, the downloaded TIME saved-Arrow dataset,
+- `${TIME_DATASET}/{dataset}/{freq}/`, a prepared classic saved-Arrow dataset,
   selected with `--input-format hf`.
 
 **Output**:
@@ -32,19 +32,19 @@ pattern-based evaluation.
 
 
 ## Usage
-Before use, configure the new dataset in `src/timebench/config/datasets.yaml`.
+Before use, configure the dataset split and terms in
+`src/timebench/config/datasets.yaml`. The initial catalog deliberately has no
+terms, so test-split feature extraction is unavailable until that protocol is
+selected. Full-series extraction remains possible.
 
 ```bash
-# Process single dataset (default: test split)
-python -m timebench.feature.features_runner --dataset Water_Quality_Darwin/15T
-
 # Use full series
-python -m timebench.feature.features_runner --dataset Water_Quality_Darwin/15T --split full
+python -m timebench.feature.features_runner --dataset ETTh1/H --input-format hf --split full
 
 # Process all datasets in config
 python -m timebench.feature.features_runner --all
 
-# Read the downloaded saved-Arrow datasets and rank full-series features
+# Read the prepared saved-Arrow datasets and rank full-series features
 python -m timebench.feature.features_runner --all --input-format hf --split full
 ```
 

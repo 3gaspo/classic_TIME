@@ -31,6 +31,7 @@ assert PERFORMANCE_SPEC is not None and PERFORMANCE_SPEC.loader is not None
 PERFORMANCE = importlib.util.module_from_spec(PERFORMANCE_SPEC)
 PERFORMANCE_SPEC.loader.exec_module(PERFORMANCE)
 
+
 def main() -> None:
     # Removing the internal NaN would incorrectly produce mean(|3-1|, |4-3|)=1.5.
     context = np.asarray([1.0, np.nan, 3.0, 4.0, np.nan])

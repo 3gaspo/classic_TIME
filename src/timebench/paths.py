@@ -9,6 +9,13 @@ from dotenv import load_dotenv
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
+def _default_shared_data_root() -> Path:
+    """Resolve the workspace or standalone-host shared dataset directory."""
+    if PROJECT_ROOT.parent.name == "time_benchmarks":
+        return PROJECT_ROOT.parents[2] / "datasets"
+    return PROJECT_ROOT.parents[1] / "datasets"
+
+
 def _configured_path(variable: str, fallback: Path) -> Path:
     load_dotenv(PROJECT_ROOT / ".env")
     value = os.getenv(variable)
@@ -17,17 +24,17 @@ def _configured_path(variable: str, fallback: Path) -> Path:
 
 def data_root() -> Path:
     """Prepared CSV, summary, and Arrow dataset workspace."""
-    return _configured_path("TIME_DATA_ROOT", PROJECT_ROOT / "datasets")
+    return _configured_path("TIME_DATA_ROOT", _default_shared_data_root())
 
 
 def dataset_storage_root() -> Path:
     """HF Arrow datasets consumed by :class:`timebench.evaluation.Dataset`."""
-    return _configured_path("TIME_DATASET", data_root() / "hf_dataset")
+    return _configured_path("TIME_DATASET", data_root() / "classic_datasets")
 
 
 def dataset_metadata_root() -> Path:
     """Shared dataset-derived quality reports and feature artifacts."""
-    return _configured_path("TIME_METADATA", data_root() / "time_metadata")
+    return _configured_path("TIME_METADATA", data_root() / "classic_tsf_metadata")
 
 
 def weights_root() -> Path:
