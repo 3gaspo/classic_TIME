@@ -50,10 +50,6 @@ dependencies = [
     "tsicl==0.2.1",
 ]
 
-[project.urls]
-Homepage = "https://github.com/zqiao11/TIME"
-Repository = "https://github.com/zqiao11/TIME"
-
 [tool.hatch.build.targets.wheel]
 packages = ["src/timebench"]
 
