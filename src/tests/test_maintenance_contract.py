@@ -111,6 +111,19 @@ class ClassicTsfMaintenanceContractTest(unittest.TestCase):
             for text in required:
                 self.assertIn(text, source, name)
 
+    def test_inherited_cluster_and_seasonal_contract(self) -> None:
+        producer = (PROJECT_ROOT / "scripts/submit_seasonal_naive.sh").read_text(
+            encoding="utf-8"
+        )
+        runtime = (PROJECT_ROOT / "src/slurm/runtime_paths.sh").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("dgx|selena [shared|project]", producer)
+        self.assertIn('TIME_SEASONAL_SCOPE="${TIME_SEASONAL_SCOPE:-shared}"', runtime)
+        self.assertTrue((PROJECT_ROOT / "scripts/dataset_diagnostics.sh").is_file())
+        self.assertTrue((PROJECT_ROOT / "scripts/compute_foundation_summary.py").is_file())
+        self.assertTrue((PROJECT_ROOT / "sync_results_to_dgx.sh").is_file())
+
     def test_seasonal_naive_uses_direct_deterministic_quantiles(self) -> None:
         experiment = (PROJECT_ROOT / "experiments/seasonal_naive.py").read_text(
             encoding="utf-8"
@@ -148,9 +161,10 @@ class ClassicTsfMaintenanceContractTest(unittest.TestCase):
             (PROJECT_ROOT / "pyproject.toml").read_text(encoding="utf-8")
         )["project"]["dependencies"]
         self.assertFalse(any("tirex" in dependency.lower() for dependency in dependencies))
-        self.assertFalse((PROJECT_ROOT / "slurm").exists())
-        slurm_source = PROJECT_ROOT / "src/slurm"
-        self.assertTrue(not slurm_source.exists() or not any(slurm_source.iterdir()))
+        self.assertTrue(
+            (PROJECT_ROOT / "slurm/dgx/foundation_models/seasonal_naive.slurm").is_file()
+        )
+        self.assertTrue((PROJECT_ROOT / "src/slurm/run_foundation_model.sh").is_file())
 
 
 if __name__ == "__main__":

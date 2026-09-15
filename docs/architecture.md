@@ -20,6 +20,9 @@ shared datasets/<name>/<name>.csv + config.json
 The reusable supervised model, training, and sampling owners do not yet exist;
 they will be introduced only after the shared protocol is selected.
 
-This repository contains no cluster workflow or scientific result layer.
-Direct children add their own models, launchers, reports, `outputs/`, and
-`logs/` while receiving later Improved TIME changes transitively.
+This repository inherits Improved TIME's generic cluster, artifact, Seasonal
+Naive, diagnostic, evaluation-grid, and reporting implementation but does not
+execute it or own a scientific result layer. Direct children add their own
+models, scientific schedules, experiment-specific launchers and reports,
+`outputs/`, and `logs/` while receiving later Improved TIME changes
+transitively.

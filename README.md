@@ -5,7 +5,8 @@ established long-term forecasting datasets. It derives from Improved TIME and
 adds preparation and loading of classic panels through TIME's saved-Arrow
 schema. Experiment repositories such as
 [`classic_tsf`](https://github.com/3gaspo/classic_tsf) inherit this layer and
-own their model grids, cluster launchers, results, and conclusions.
+the generic Improved TIME cluster/artifact toolchain. They own their model
+grids, experiment-specific launchers, results, and conclusions.
 
 The dataset scope is Electricity, Traffic, Solar-Energy, Weather, Exchange
 Rate, ETTh1, ETTh2, ETTm1, and ETTm2. PEMS is intentionally excluded.
@@ -75,6 +76,7 @@ src/timebench/config/                classic dataset catalog
 src/timebench/evaluation/            inherited dataset/window/metric contracts
 src/timebench/pipeline/              inherited task lifecycle contracts
 src/timebench/feature/               inherited dataset diagnostics/features
+slurm/, src/slurm/                    inherited generic cluster execution
 src/tests/                            common and classic preparation checks
 datasets/, weights/                   ignored input placeholders
 outputs/, logs/                       ignored artifact placeholders
