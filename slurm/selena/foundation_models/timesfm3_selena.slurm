@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=stimesfm3
 #SBATCH --gres=gpu:1
-#SBATCH --output=logs/%x_%j.out
-#SBATCH --error=logs/%x_%j.err
+#SBATCH --output=/scratch/users/%u/codes/classic_template/logs/%x_%j.out
+#SBATCH --error=/scratch/users/%u/codes/classic_template/logs/%x_%j.err
 #SBATCH --time=23:00:00
 #SBATCH --partition=an
 #SBATCH --qos=an_preemptable

@@ -1,17 +1,90 @@
 # Classic supervised forecasting dataset catalog.
-#
-# The preparation command materializes these keys below TIME_DATASET. Forecast
-# terms, split lengths, and prediction horizons are intentionally absent until
-# the supervised protocol is selected. This prevents inherited TIME runners
-# from silently evaluating only three of the classic 96/192/336/720 horizons.
+# Prediction lengths are measured in sampling steps.
+# Chronological split: final ceil(N/5) sampling steps are test; preceding dates
+# remain available for fitting and any future training-validation policy.
+# N is the local prepared-panel length (after hourly aggregation where needed).
+# val_length=0 reserves no separate validation block at this stage.
+# Context length is experiment-owned. TIME evaluation stride equals horizon.
 
 datasets:
-  electricity/H: {}
-  traffic/H: {}
-  solar/H: {}
-  weather/H: {}
-  exchange_rate/D: {}
-  ETTh1/H: {}
-  ETTh2/H: {}
-  ETTm1/15T: {}
-  ETTm2/15T: {}
+  electricity/H:
+    test_length: 5261
+    val_length: 0
+    short:
+      prediction_length: 24
+    medium:
+      prediction_length: 168
+    long:
+      prediction_length: 672
+  traffic/H:
+    test_length: 3509
+    val_length: 0
+    short:
+      prediction_length: 24
+    medium:
+      prediction_length: 168
+    long:
+      prediction_length: 672
+  solar/H:
+    test_length: 1752
+    val_length: 0
+    short:
+      prediction_length: 24
+    medium:
+      prediction_length: 168
+    long:
+      prediction_length: 672
+  weather/H:
+    test_length: 1757
+    val_length: 0
+    short:
+      prediction_length: 24
+    medium:
+      prediction_length: 168
+    long:
+      prediction_length: 672
+  exchange_rate/D:
+    test_length: 1518
+    val_length: 0
+    short:
+      prediction_length: 7
+    medium:
+      prediction_length: 30
+    long:
+      prediction_length: 92
+  ETTh1/H:
+    test_length: 3484
+    val_length: 0
+    short:
+      prediction_length: 24
+    medium:
+      prediction_length: 168
+    long:
+      prediction_length: 672
+  ETTh2/H:
+    test_length: 3484
+    val_length: 0
+    short:
+      prediction_length: 24
+    medium:
+      prediction_length: 168
+    long:
+      prediction_length: 672
+  ETTm1/15T:
+    test_length: 13936
+    val_length: 0
+    short:
+      prediction_length: 4
+    medium:
+      prediction_length: 96
+    long:
+      prediction_length: 672
+  ETTm2/15T:
+    test_length: 13936
+    val_length: 0
+    short:
+      prediction_length: 4
+    medium:
+      prediction_length: 96
+    long:
+      prediction_length: 672

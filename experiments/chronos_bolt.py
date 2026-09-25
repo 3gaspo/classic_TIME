@@ -102,6 +102,8 @@ def run_chronos_bolt_experiment(
     print(f"Loading Chronos-Bolt model: {model_name} from {checkpoint_path}...")
 
     device_map = "cuda" if torch.cuda.is_available() else "cpu"
+    from timebench.pipeline.runtime_resources import log_selected_device
+    log_selected_device(device_map, stage="forecast", model="chronos_bolt")
     pipeline = BaseChronosPipeline.from_pretrained(
         str(checkpoint_path),
         device_map=device_map,

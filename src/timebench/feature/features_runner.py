@@ -519,6 +519,8 @@ def write_dataset_feature_index(paths: list[Path], output_path: Path) -> None:
 
 
 def main():
+    from timebench.pipeline.runtime_resources import log_selected_device
+    log_selected_device("cpu", stage="diagnostics", component="feature_extraction")
     parser = argparse.ArgumentParser(
         description="Run tsfeatures extraction on preprocessed datasets.",
         formatter_class=argparse.RawDescriptionHelpFormatter,

@@ -89,6 +89,8 @@ def run_seasonal_naive_experiment(
         config_path: Path to datasets.yaml config file
         use_val: If True, evaluate on validation data (for hyperparameter selection, no saving)
     """
+    from timebench.pipeline.runtime_resources import log_selected_device
+    log_selected_device("cpu", stage="forecast", model="seasonal_naive")
     covariate_mode = validate_covariate_mode(
         "seasonal_naive", covariate_mode, supports_covariates=SUPPORTS_COVARIATES
     )

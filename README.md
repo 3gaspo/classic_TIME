@@ -7,6 +7,10 @@ schema. Experiment repositories such as
 [`classic_tsf`](https://github.com/3gaspo/classic_tsf) inherit this layer and
 the generic Improved TIME cluster/artifact toolchain. They own their model
 grids, experiment-specific launchers, results, and conclusions.
+The inherited runtime logs explicit cgroup availability in each compute-node
+snapshot and records the device actually selected by learned and CPU-only
+stages. Reusable plotting is headless and moves dense labels to an external
+legend.
 
 The dataset scope is Electricity, Traffic, Solar-Energy, Weather, Exchange
 Rate, ETTh1, ETTh2, ETTm1, and ETTm2. PEMS is intentionally excluded.
@@ -61,6 +65,13 @@ Within this workspace, `TIME_DATASET` defaults to the shared
 `datasets/classic_tsf_metadata/`. Standalone checkouts resolve the same names
 below their configured `TIME_DATA_ROOT`. Weights, outputs, and logs remain
 project-scoped and ignored.
+
+The inherited schema-1 lifecycle recognizes `computed` task artifacts between
+computation and a separate finalizer. Outer launch interruption preserves that
+state, while reports and downstream consumers continue to require
+`completed`. Cache dependencies use compact producer references. The inherited
+validation helper requires finite support in both context and future; future
+classic selectors must define their own no-validation default.
 
 The catalog at
 [`src/timebench/config/datasets.yaml`](src/timebench/config/datasets.yaml)

@@ -20,7 +20,7 @@ time_stage_start summarize
 time_task_start "foundation_model_summary outputs=$TIME_OUTPUTS"
 
 tasks_root="$TIME_OUTPUTS/foundation_models/tasks"
-summary_root="$TIME_OUTPUTS/foundation_models/summary/$TIME_LAUNCH_ID"
+summary_root="$TIME_OUTPUTS/reports/foundation_models/$TIME_LAUNCH_ID"
 
 summary_command=(
     uv run --no-sync python
@@ -66,7 +66,7 @@ if [ "${#incomplete_models[@]}" -gt 0 ]; then
 fi
 
 time_stage_start feature_plot
-analysis_root="$TIME_OUTPUTS/foundation_models/feature_analysis/$TIME_LAUNCH_ID"
+analysis_root="$TIME_OUTPUTS/reports/foundation_models/$TIME_LAUNCH_ID/feature_analysis"
 time_task_start "mase_vs_features features=$TIME_METADATA/stl_features output=$analysis_root"
 plot_command=(
     uv run --no-sync python

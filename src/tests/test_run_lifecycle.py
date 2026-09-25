@@ -112,6 +112,24 @@ def main() -> None:
                 run_lifecycle._write_manifest = atomic_writer
             assert load_manifest(quota_run.run_dir)["status"] == "interrupted"
 
+            computed_root = Path(temporary) / "computed_identity"
+            os.environ["TIME_LAUNCH_ID"] = "compute_launch"
+            computed = _allocate(computed_root)
+            try:
+                with computed:
+                    (computed.run_dir / "result.txt").write_text("computed", encoding="utf-8")
+                    computed.compute(["result.txt"])
+                    raise RuntimeError("later task failed")
+            except RuntimeError:
+                pass
+            assert load_manifest(computed.run_dir)["status"] == "computed"
+            assert interrupt_launch(computed_root, "compute_launch") == []
+            os.environ["TIME_LAUNCH_ID"] = "finalize_launch"
+            finalizer = _allocate(computed_root)
+            assert finalizer.action == "finalize" and not finalizer.should_run
+            finalizer.complete()
+            assert load_manifest(finalizer.run_dir)["status"] == "completed"
+
             os.environ["TIME_LAUNCH_ID"] = "launch_4"
             os.environ["SLURM_JOB_ID"] = "404"
             resumed = _allocate(root)

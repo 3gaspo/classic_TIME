@@ -529,6 +529,8 @@ def audit_time_windows(
 
 
 def main() -> None:
+    from timebench.pipeline.runtime_resources import log_selected_device
+    log_selected_device("cpu", stage="diagnostics", component="window_audit")
     parser = argparse.ArgumentParser(
         description="Audit shared TIME source series and configured L-H windows."
     )
