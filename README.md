@@ -65,6 +65,10 @@ Within this workspace, `TIME_DATASET` defaults to the shared
 `datasets/classic_tsf_metadata/`. Standalone checkouts resolve the same names
 below their configured `TIME_DATA_ROOT`. Weights, outputs, and logs remain
 project-scoped and ignored.
+They default to the checkout locally and to the project's scratch root on
+Selena; explicit `OUTPUTS_ROOT` and `LOGS_ROOT` values take precedence. This
+allows the Seasonal producer to target the common Seasonal artifact and log
+roots while consumers continue to use `TIME_SEASONAL_TASKS_ROOT`.
 
 The inherited schema-1 lifecycle recognizes `computed` task artifacts between
 computation and a separate finalizer. Outer launch interruption preserves that

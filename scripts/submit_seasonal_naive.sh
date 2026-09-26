@@ -33,17 +33,19 @@ else
     source "$PROJECT_ROOT/src/slurm/runtime_paths.sh"
     front="$PROJECT_ROOT/slurm/dgx/foundation_models/seasonal_naive.slurm"
 fi
-mkdir -p "$TIME_LOGS"
+mkdir -p "$TIME_LOGS" "$TIME_SEASONAL_LOGS_ROOT"
 
 launch_id="${TIME_LAUNCH_ID:-${cluster}_seasonal_$(date -u '+%Y%m%dT%H%M%SZ')_$$}"
 job_id="$(
     sbatch --parsable \
-        --export="ALL,TIME_LAUNCH_ID=$launch_id,OUTPUTS_ROOT=$TIME_SEASONAL_ROOT" \
+        --output="$TIME_SEASONAL_LOGS_ROOT/%x_%j.out" \
+        --error="$TIME_SEASONAL_LOGS_ROOT/%x_%j.err" \
+        --export="ALL,TIME_LAUNCH_ID=$launch_id,OUTPUTS_ROOT=$TIME_SEASONAL_ROOT,LOGS_ROOT=$TIME_SEASONAL_LOGS_ROOT" \
         "$front"
 )"
 job_id="${job_id%%;*}"
 
 echo "$seasonal_scope Seasonal Naive submitted job_id=$job_id launch_id=$launch_id"
 echo "Seasonal task root: $TIME_SEASONAL_TASKS_ROOT"
+echo "Seasonal logs root: $TIME_SEASONAL_LOGS_ROOT"
 echo "status: bash scripts/foundation_model_status.sh $cluster $launch_id"
-

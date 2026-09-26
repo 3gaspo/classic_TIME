@@ -119,7 +119,11 @@ class ClassicTsfMaintenanceContractTest(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn("dgx|selena [shared|project]", producer)
+        self.assertIn("OUTPUTS_ROOT=$TIME_SEASONAL_ROOT", producer)
+        self.assertIn("LOGS_ROOT=$TIME_SEASONAL_LOGS_ROOT", producer)
         self.assertIn('TIME_SEASONAL_SCOPE="${TIME_SEASONAL_SCOPE:-shared}"', runtime)
+        self.assertIn('OUTPUTS_ROOT="${OUTPUTS_ROOT:-${TIME_OUTPUTS:-$default_outputs_root}}"', runtime)
+        self.assertIn("TIME_SEASONAL_LOGS_ROOT", runtime)
         self.assertTrue((PROJECT_ROOT / "scripts/dataset_diagnostics.sh").is_file())
         self.assertTrue((PROJECT_ROOT / "scripts/compute_foundation_summary.py").is_file())
         self.assertTrue((PROJECT_ROOT / "sync_results_to_dgx.sh").is_file())
