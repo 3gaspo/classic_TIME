@@ -25,6 +25,7 @@ def _allocate(
     root: Path,
     value: int = 1,
     experiment: str = "foundation_models",
+    frequency: str = "H",
     **kwargs,
 ):
     return allocate_run(
@@ -34,7 +35,7 @@ def _allocate(
             "model": "model_a",
             "target_mode": "univariate",
             "dataset": "toy",
-            "frequency": "H",
+            "frequency": frequency,
             "term": "short",
         },
         model_config={"value": value},
@@ -185,6 +186,37 @@ def main() -> None:
                     repeat_policy="average",
                 )
             ) == 2
+
+            task_specific_root = Path(temporary) / "task_specific"
+            hourly = _allocate(task_specific_root / "hourly", value=24, frequency="H")
+            daily = _allocate(task_specific_root / "daily", value=1, frequency="D")
+            _complete(hourly)
+            _complete(daily)
+            try:
+                select_completed_runs(task_specific_root)
+            except ManifestError:
+                pass
+            else:
+                raise AssertionError("undeclared cross-task configuration changes must fail")
+            assert len(
+                select_completed_runs(
+                    task_specific_root,
+                    task_specific_model_fields={"value"},
+                )
+            ) == 2
+            conflicting_hourly = _allocate(
+                task_specific_root / "hourly", value=48, frequency="H"
+            )
+            _complete(conflicting_hourly)
+            try:
+                select_completed_runs(
+                    task_specific_root,
+                    task_specific_model_fields={"value"},
+                )
+            except ManifestError:
+                pass
+            else:
+                raise AssertionError("same-task configuration ambiguity must still fail")
 
             overwritten = _allocate(root, value=3, policy="overwrite_path")
             assert overwritten.action == "overwrite"

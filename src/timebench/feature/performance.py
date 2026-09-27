@@ -99,6 +99,7 @@ def load_dataset_mase(
         launch_id=seasonal_naive_launch_id,
         config_policy=config_policy,
         repeat_policy=repeat_policy,
+        task_specific_model_fields={"season_length"},
     )
     baseline_rows = []
     for run_dir, manifest in baseline_selected:

@@ -34,6 +34,7 @@ def load_result_cells(
     config_filters: dict | None = None,
     config_policy: str = "error",
     repeat_policy: str = "selected",
+    task_specific_model_fields: set[str] | None = None,
 ) -> list[dict]:
     """Load selected completed manifests for dataset/frequency/horizon cells."""
     cells = []
@@ -45,6 +46,7 @@ def load_result_cells(
         config_filters=config_filters,
         config_policy=config_policy,
         repeat_policy=repeat_policy,
+        task_specific_model_fields=task_specific_model_fields,
     )
     for run_dir, manifest in selected:
         identity = manifest["identity"]
@@ -609,6 +611,7 @@ def main() -> None:
         target_modes={"univariate"},
         config_policy=args.config_policy,
         repeat_policy=args.repeat_policy,
+        task_specific_model_fields={"season_length"},
     )
     summary_cells = [
         cell for cell in cells if cell.get("base_model") != "seasonal_naive"
