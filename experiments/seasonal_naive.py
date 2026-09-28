@@ -58,11 +58,7 @@ from timebench.evaluation.data import (
 )
 from timebench.evaluation.utils import get_available_terms
 from timebench.models import SeasonalNaivePredictor
-from timebench.paths import (
-    foundation_experiment_name,
-    foundation_experiment_root,
-    foundation_identity_root,
-)
+from timebench.paths import outputs_root
 from timebench.pipeline import allocate_run, resolve_target_mode
 
 # Load environment variables
@@ -106,10 +102,10 @@ def run_seasonal_naive_experiment(
             raise ValueError(f"No terms defined for dataset '{dataset_name}' in config")
 
     if output_dir is None:
-        output_dir = str(foundation_experiment_root())
+        output_dir = str(outputs_root() / "seasonal_naive" / "evaluations")
 
     os.makedirs(output_dir, exist_ok=True)
-    experiment = foundation_experiment_name()
+    experiment = "seasonal_naive"
 
     print(f"\n{'='*60}")
     print(f"Model: Seasonal Naive")
@@ -153,9 +149,7 @@ def run_seasonal_naive_experiment(
 
         season_length = get_seasonality(dataset.freq)
         quantile_levels = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-        identity_root = foundation_identity_root(
-            output_dir, "seasonal_naive", resolved_target_mode, dataset_name, term
-        )
+        identity_root = Path(output_dir) / resolved_target_mode / dataset_name / term
         run = allocate_run(
             identity_root,
             experiment=experiment,

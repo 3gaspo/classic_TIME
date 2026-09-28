@@ -77,7 +77,34 @@ class ClassicTsfMaintenanceContractTest(unittest.TestCase):
                 "ETTm2/15T",
             },
         )
-        self.assertTrue(all(not settings for settings in config["datasets"].values()))
+        expected_test_lengths = {
+            "electricity/H": 5261,
+            "traffic/H": 3509,
+            "solar/H": 1752,
+            "weather/H": 1757,
+            "exchange_rate/D": 1518,
+            "ETTh1/H": 3484,
+            "ETTh2/H": 3484,
+            "ETTm1/15T": 13936,
+            "ETTm2/15T": 13936,
+        }
+        expected_horizons = {
+            "H": {"short": 24, "medium": 168, "long": 672},
+            "D": {"short": 7, "medium": 30, "long": 92},
+            "15T": {"short": 4, "medium": 96, "long": 672},
+        }
+        for dataset, settings in config["datasets"].items():
+            frequency = dataset.rsplit("/", maxsplit=1)[1]
+            self.assertEqual(settings["test_length"], expected_test_lengths[dataset])
+            self.assertEqual(settings["val_length"], 0)
+            self.assertEqual(
+                {
+                    term: term_settings["prediction_length"]
+                    for term, term_settings in settings.items()
+                    if term in {"short", "medium", "long"}
+                },
+                expected_horizons[frequency],
+            )
         preparation = (PROJECT_ROOT / "scripts/prepare_classic_datasets.py").read_text(
             encoding="utf-8"
         )
@@ -119,7 +146,7 @@ class ClassicTsfMaintenanceContractTest(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn("dgx|selena [shared|project]", producer)
-        self.assertIn("OUTPUTS_ROOT=$TIME_SEASONAL_ROOT", producer)
+        self.assertIn("OUTPUTS_ROOT=$TIME_SEASONAL_OUTPUTS_ROOT", producer)
         self.assertIn("LOGS_ROOT=$TIME_SEASONAL_LOGS_ROOT", producer)
         self.assertIn('TIME_SEASONAL_SCOPE="${TIME_SEASONAL_SCOPE:-shared}"', runtime)
         self.assertIn('OUTPUTS_ROOT="${OUTPUTS_ROOT:-${TIME_OUTPUTS:-$default_outputs_root}}"', runtime)

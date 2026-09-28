@@ -17,10 +17,10 @@ Rate, ETTh1, ETTh2, ETTm1, and ETTm2. PEMS is intentionally excluded.
 
 ## Current status
 
-Dataset conversion and loading are implemented. The shared supervised split,
-training-window, horizon, target-mode, objective, and seed contracts have not
-yet been selected. Consequently, the catalog is preparation-ready but not a
-runnable forecasting grid, and this template claims no experimental result.
+Dataset conversion and loading are implemented. The chronological test blocks
+and frequency-specific `short|medium|long` horizons are selected in the shared
+catalog. Training windows, target modes, objectives, seeds, and runnable model
+grids remain unselected, so this template claims no experimental result.
 
 ## Dataset preparation
 
@@ -67,9 +67,10 @@ below their configured `TIME_DATA_ROOT`. Weights, outputs, and logs remain
 project-scoped and ignored. DGX/local artifacts use `outputs/dgx/` and
 `logs/dgx/`; synchronized Selena artifacts use `outputs/selena/` and
 `logs/selena/`, while Selena jobs use the project's scratch `outputs/` and
-`logs/` roots. Explicit `OUTPUTS_ROOT` and `LOGS_ROOT` values take precedence. This
-allows the Seasonal producer to target the common Seasonal artifact and log
-roots while consumers continue to use `TIME_SEASONAL_TASKS_ROOT`.
+`logs/` roots. Explicit `OUTPUTS_ROOT` and `LOGS_ROOT` values take precedence.
+The independent shared Seasonal checkout stores its artifacts below
+`outputs/seasonal_naive/` and logs below `logs/seasonal_naive/`; consumers use
+`TIME_SEASONAL_EVALUATIONS_ROOT`.
 
 The inherited schema-1 lifecycle recognizes `computed` task artifacts between
 computation and a separate finalizer. Outer launch interruption preserves that
@@ -80,9 +81,8 @@ classic selectors must define their own no-validation default.
 
 The catalog at
 [`src/timebench/config/datasets.yaml`](src/timebench/config/datasets.yaml)
-contains the nine dataset/frequency keys but deliberately omits split lengths
-and terms. This prevents TIME's three `short|medium|long` labels from silently
-replacing the conventional `96/192/336/720` supervised horizons.
+contains the nine dataset/frequency keys, chronological test lengths, and the
+selected frequency-specific `short|medium|long` horizons.
 
 ## Source tree
 

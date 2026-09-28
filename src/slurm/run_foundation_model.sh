@@ -19,12 +19,18 @@ if [ -z "$runner" ]; then
     exit 2
 fi
 
-TIME_WORKFLOW_NAME=foundation_models
-TIME_EXPERIMENT=foundation_models
+if [ "$model" = seasonal_naive ]; then
+    TIME_EXPERIMENT="${TIME_EXPERIMENT:-seasonal_naive}"
+    TIME_WORKFLOW_NAME="${TIME_WORKFLOW_NAME:-seasonal_naive}"
+    TIME_RESULT_SCOPE="$TIME_SEASONAL_EVALUATIONS_ROOT"
+else
+    TIME_EXPERIMENT="${TIME_EXPERIMENT:-foundation_models}"
+    TIME_WORKFLOW_NAME="${TIME_WORKFLOW_NAME:-$TIME_EXPERIMENT}"
+    TIME_RESULT_SCOPE="$TIME_OUTPUTS/$TIME_EXPERIMENT/tasks/$model"
+fi
 TIME_TASK_NAME="$model"
 TIME_STATUS_NAME="$model"
 TIME_LAUNCH_ID="${TIME_LAUNCH_ID:-${SLURM_JOB_ID:-manual_$(date -u '+%Y%m%dT%H%M%SZ')_$$}}"
-TIME_RESULT_SCOPE="$TIME_OUTPUTS/foundation_models/tasks/$model"
 export TIME_WORKFLOW_NAME TIME_EXPERIMENT TIME_TASK_NAME TIME_STATUS_NAME TIME_LAUNCH_ID TIME_RESULT_SCOPE
 source "$PROJECT_ROOT/src/slurm/workflow_common.sh"
 
