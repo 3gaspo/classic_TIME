@@ -67,12 +67,12 @@ def main() -> None:
     parser.add_argument(
         "--config-policy",
         choices=("error", "distinct", "latest", "average"),
-        default="error",
+        default="latest",
     )
     parser.add_argument(
         "--repeat-policy",
         choices=("selected", "latest", "distinct", "average"),
-        default="selected",
+        default="latest",
     )
     parser.add_argument(
         "--features",

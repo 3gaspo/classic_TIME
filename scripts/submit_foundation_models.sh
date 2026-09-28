@@ -24,7 +24,7 @@ else
     export TIME_STORAGE_ROOT
     source "$PROJECT_ROOT/src/slurm/runtime_paths.sh"
 fi
-mkdir -p "$TIME_LOGS"
+mkdir -p "$TIME_LOGS/foundation_models/slurm"
 
 source "$PROJECT_ROOT/src/slurm/foundation_model_runners.sh"
 require_foundation_schedule

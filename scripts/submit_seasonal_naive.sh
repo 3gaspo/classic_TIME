@@ -33,14 +33,14 @@ else
     source "$PROJECT_ROOT/src/slurm/runtime_paths.sh"
     front="$PROJECT_ROOT/slurm/dgx/foundation_models/seasonal_naive.slurm"
 fi
-mkdir -p "$TIME_LOGS" "$TIME_SEASONAL_LOGS_ROOT"
+mkdir -p "$TIME_LOGS/foundation_models/slurm" "$TIME_SEASONAL_LOGS_ROOT/foundation_models/slurm"
 
 launch_id="${TIME_LAUNCH_ID:-${cluster}_seasonal_$(date -u '+%Y%m%dT%H%M%SZ')_$$}"
 job_id="$(
     sbatch --parsable \
-        --output="$TIME_SEASONAL_LOGS_ROOT/%x_%j.out" \
-        --error="$TIME_SEASONAL_LOGS_ROOT/%x_%j.err" \
-        --export="ALL,TIME_LAUNCH_ID=$launch_id,OUTPUTS_ROOT=$TIME_SEASONAL_ROOT,LOGS_ROOT=$TIME_SEASONAL_LOGS_ROOT" \
+        --output="$TIME_SEASONAL_LOGS_ROOT/foundation_models/slurm/%x_%j.out" \
+        --error="$TIME_SEASONAL_LOGS_ROOT/foundation_models/slurm/%x_%j.err" \
+        --export="ALL,TIME_LAUNCH_ID=$launch_id,OUTPUTS_ROOT=$TIME_SEASONAL_ROOT,LOGS_ROOT=$TIME_SEASONAL_LOGS_ROOT,TIME_EXPERIMENT=foundation_models" \
         "$front"
 )"
 job_id="${job_id%%;*}"

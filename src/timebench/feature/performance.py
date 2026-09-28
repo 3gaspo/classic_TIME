@@ -41,8 +41,8 @@ def load_dataset_mase(
     launch_id: str | None = None,
     target_modes: set[str] | None = None,
     config_filters: dict | None = None,
-    config_policy: str = "error",
-    repeat_policy: str = "selected",
+    config_policy: str = "latest",
+    repeat_policy: str = "latest",
 ) -> pd.DataFrame:
     """Geometrically average Seasonal-Naive-scaled task MASE per dataset."""
     rows = []
@@ -149,8 +149,8 @@ def join_features_and_mase(
     launch_id: str | None = None,
     target_modes: set[str] | None = None,
     config_filters: dict | None = None,
-    config_policy: str = "error",
-    repeat_policy: str = "selected",
+    config_policy: str = "latest",
+    repeat_policy: str = "latest",
 ) -> pd.DataFrame:
     """Join dataset features to Seasonal-Naive-scaled model performance."""
     features = load_dataset_features(features_root, split=split)
@@ -331,8 +331,8 @@ def analyze_feature_performance(
     launch_id: str | None = None,
     target_modes: set[str] | None = None,
     config_filters: dict | None = None,
-    config_policy: str = "error",
-    repeat_policy: str = "selected",
+    config_policy: str = "latest",
+    repeat_policy: str = "latest",
     features: list[str] | None = None,
     top: int = 5,
 ) -> tuple[pd.DataFrame, pd.DataFrame, list[str]]:

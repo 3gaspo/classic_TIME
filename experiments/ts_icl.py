@@ -29,7 +29,11 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from timebench.evaluation.saver import save_window_predictions
 from timebench.evaluation.grid import EVALUATION_GRID_DEFINITION
 from timebench.evaluation.timing import EvaluationTimer
-from timebench.evaluation.utils import get_available_terms, normalize_tsicl_quantiles
+from timebench.evaluation.utils import (
+    get_available_terms,
+    normalize_tsicl_quantiles,
+    patch_tsicl_covariate_rollout,
+)
 from timebench.evaluation.covariates import (
     COVARIATE_MODES,
     extract_covariate_window,
@@ -83,7 +87,7 @@ def run_tsicl_experiment(
     device_map = "cuda" if torch.cuda.is_available() else "cpu"
     from timebench.pipeline.runtime_resources import log_selected_device
     log_selected_device(device_map, stage="forecast", model="ts_icl")
-    
+
     # Load dataset configuration
     print("Loading configuration...")
     config = load_dataset_config(config_path)
@@ -186,6 +190,7 @@ def run_tsicl_experiment(
                 "windows": dataset.windows,
                 "seasonality": season_length,
                 "evaluation_grid": EVALUATION_GRID_DEFINITION,
+                "nan_policy": "omit_nan_predictions_report_counts_reject_infinity",
             },
             runtime_config={
                 "batch_size": batch_size,
@@ -210,6 +215,7 @@ def run_tsicl_experiment(
             model_path=str(checkpoint_path),
             allow_auto_download=False,
         )
+        patch_tsicl_covariate_rollout(model)
 
         # Determine split
         data_length = test_length
@@ -240,7 +246,7 @@ def run_tsicl_experiment(
 
             if target.ndim == 1:
                 target = target[np.newaxis, :]
-            
+
             return torch.tensor(target).permute(1, 0) # (seq_len, q)
 
         # Batch Inference with lazy loading
@@ -333,7 +339,7 @@ def run_tsicl_experiment(
             # Optional progress logging
             if (start // batch_size + 1) % 10 == 0:
                 print(f"    Processed {min(start + batch_size, total_items)}/{total_items}...")
-            
+
         # Concatenate all batches into a single array
         # Shape: (num_total_instances, num_quantiles, num_variates, prediction_length)
         fc_quantiles = np.concatenate(fc_quantiles_batches, axis=0)
@@ -364,7 +370,8 @@ def run_tsicl_experiment(
                 evaluation_grid_path = str(evaluation_grid_path),
             )
             run.complete(
-                ["predictions.npz", "metrics.npz", "config.json", "metrics_summary.json"]
+                ["predictions.npz", "metrics.npz", "metrics_summary.json"],
+                artifact_metadata={"evaluation": metadata},
             )
 
         print(f"  Completed: {metadata["num_series"]} series × {metadata["num_windows"]} windows")

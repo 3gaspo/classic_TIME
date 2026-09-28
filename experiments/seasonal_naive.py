@@ -176,6 +176,7 @@ def run_seasonal_naive_experiment(
                 "windows": dataset.windows,
                 "seasonality": season_length,
                 "evaluation_grid": EVALUATION_GRID_DEFINITION,
+                "nan_policy": "omit_nan_predictions_report_counts_reject_infinity",
             },
             runtime_config={"device": "cpu"},
             experiment_config={
@@ -251,10 +252,10 @@ def run_seasonal_naive_experiment(
                 [
                     "predictions.npz",
                     "metrics.npz",
-                    "config.json",
                     "metrics_summary.json",
                     EVALUATION_GRID_FILE,
-                ]
+                ],
+                artifact_metadata={"evaluation": metadata},
             )
         print(f"  Completed: {metadata['num_series']} series x {metadata['num_windows']} windows")
         print(f"  Output: {run.run_dir}")

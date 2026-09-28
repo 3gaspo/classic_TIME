@@ -208,6 +208,7 @@ def run_chronos2_experiment(
                 "windows": dataset.windows,
                 "seasonality": season_length,
                 "evaluation_grid": EVALUATION_GRID_DEFINITION,
+                "nan_policy": "omit_nan_predictions_report_counts_reject_infinity",
             },
             runtime_config={
                 "batch_size": batch_size,
@@ -417,7 +418,8 @@ def run_chronos2_experiment(
                 evaluation_grid_path=str(evaluation_grid_path),
             )
             run.complete(
-                ["predictions.npz", "metrics.npz", "config.json", "metrics_summary.json"]
+                ["predictions.npz", "metrics.npz", "metrics_summary.json"],
+                artifact_metadata={"evaluation": metadata},
             )
 
         print(f"  Completed: {metadata['num_series']} series × {metadata['num_windows']} windows")

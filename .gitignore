@@ -112,10 +112,12 @@ AGENTS.md
 /docs/INTERNAL_WORKFLOW.md
 /docs/IMPROVEMENTS.md
 .venv/
-outputs/*
-!outputs/.gitkeep
-logs/*
-!logs/.gitkeep
+outputs/**
+!outputs/**/
+!outputs/**/.gitkeep
+logs/**
+!logs/**/
+!logs/**/.gitkeep
 datasets/*
 !datasets/.gitkeep
 weights/*

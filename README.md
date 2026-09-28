@@ -64,9 +64,10 @@ Within this workspace, `TIME_DATASET` defaults to the shared
 `datasets/classic_datasets/` root and `TIME_METADATA` to
 `datasets/classic_tsf_metadata/`. Standalone checkouts resolve the same names
 below their configured `TIME_DATA_ROOT`. Weights, outputs, and logs remain
-project-scoped and ignored.
-They default to the checkout locally and to the project's scratch root on
-Selena; explicit `OUTPUTS_ROOT` and `LOGS_ROOT` values take precedence. This
+project-scoped and ignored. DGX/local artifacts use `outputs/dgx/` and
+`logs/dgx/`; synchronized Selena artifacts use `outputs/selena/` and
+`logs/selena/`, while Selena jobs use the project's scratch `outputs/` and
+`logs/` roots. Explicit `OUTPUTS_ROOT` and `LOGS_ROOT` values take precedence. This
 allows the Seasonal producer to target the common Seasonal artifact and log
 roots while consumers continue to use `TIME_SEASONAL_TASKS_ROOT`.
 
@@ -94,7 +95,8 @@ src/timebench/feature/               inherited dataset diagnostics/features
 slurm/, src/slurm/                    inherited generic cluster execution
 src/tests/                            common and classic preparation checks
 datasets/, weights/                   ignored input placeholders
-outputs/, logs/                       ignored artifact placeholders
+outputs/{dgx,selena}/                 ignored artifacts separated by surface
+logs/{dgx,selena}/                    ignored runtime records separated by surface
 ```
 
 See [architecture](docs/architecture.md),

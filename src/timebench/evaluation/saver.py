@@ -7,7 +7,6 @@ Output structure:
             predictions.npz  # Contains quantile predictions and levels
             metrics.npz      # Contains per-window metrics
             metrics_summary.json  # Contains lightweight aggregate metrics
-            config.json     # Contains dataset config
 """
 
 import json
@@ -58,7 +57,7 @@ def save_window_predictions(
         ds_config: Dataset configuration string, e.g., "m4_weekly/W/short"
         output_base_dir: Base directory for output files
         seasonality: Seasonal period length for MASE computation
-        model_hyperparams: Dictionary of model hyperparameters to save in config
+        model_hyperparams: Model metadata returned for the run manifest
         quantile_levels: Quantile levels for output (default: [0.1, 0.2, ..., 0.9])
         inference_seconds: Accelerator-synchronized wall time for the complete
             test forecasting loop. Model loading, dataset construction, metric
@@ -77,11 +76,8 @@ def save_window_predictions(
         metrics_summary.json:
             - Finite mean and coverage counts for each metric
 
-        config.json:
-            - Dataset, forecast-shape, metric, and model configuration
-
     Returns:
-        config: Dictionary containing dataset config
+        Dictionary to store as artifact metadata in the run manifest.
     """
     # Setup quantile levels
     if quantile_levels is None:
@@ -231,6 +227,30 @@ def save_window_predictions(
             grid_path, ground_truth=ground_truth
         )
 
+    if np.isinf(predictions_quantiles).any():
+        raise ValueError("Infinite forecast values cannot be evaluated")
+    prediction_nan = np.isnan(predictions_quantiles)
+    evaluated_positions = (
+        target_mask[:, :, None, :, :]
+        & evaluation_mask[:, :, None, :, None]
+    )
+    evaluated_positions = np.broadcast_to(
+        evaluated_positions, predictions_quantiles.shape
+    )
+    prediction_outputs = {
+        "total_values": int(predictions_quantiles.size),
+        "nan_values": int(prediction_nan.sum()),
+        "nan_rate": float(prediction_nan.mean()),
+        "cells_with_nan": int(prediction_nan.any(axis=(2, 4)).sum()),
+        "total_cells": int(num_series * num_windows * num_variates),
+        "evaluation_values": int(evaluated_positions.sum()),
+        "evaluation_nan_values": int((prediction_nan & evaluated_positions).sum()),
+    }
+    prediction_outputs["evaluation_nan_rate"] = (
+        prediction_outputs["evaluation_nan_values"] / prediction_outputs["evaluation_values"]
+        if prediction_outputs["evaluation_values"] else None
+    )
+
     # Save quantiles to npz file
     # Use float16 to reduce storage (sufficient for visualization purposes)
     # Apply dynamic scaling to prevent float16 overflow (max ~65504)
@@ -273,7 +293,7 @@ def save_window_predictions(
     np.savez_compressed(metrics_path, **metrics)
     print(f"    Saved metrics to {metrics_path}")
 
-    # Save config
+    # Build evaluation metadata for the authoritative run manifest.
     config = {
         "dataset_config": ds_config,
         "num_series": num_series,
@@ -288,6 +308,7 @@ def save_window_predictions(
         "context_length": context_len,
         "metric_names": list(metrics.keys()),
         "prediction_scale_factor": prediction_scale_factor,  # For float16 overflow prevention
+        "prediction_outputs": prediction_outputs,
         "metrics_summary_file": "metrics_summary.json",
         "evaluation_grid": {
             "definition": EVALUATION_GRID_DEFINITION,
@@ -296,10 +317,6 @@ def save_window_predictions(
             "total_values": int(evaluation_mask.size),
         },
     }
-
-    launch_id = os.environ.get("TIME_LAUNCH_ID")
-    if launch_id:
-        config["launch_id"] = launch_id
 
     if inference_seconds is not None:
         inference_seconds = float(inference_seconds)
@@ -311,16 +328,11 @@ def save_window_predictions(
     if model_hyperparams:
         config.update(model_hyperparams)
 
-    config_path = os.path.join(ds_output_dir, "config.json")
-    with open(config_path, "w") as f:
-        json.dump(config, f, indent=2)
-    print(f"    Saved config to {config_path}")
-
     metric_summaries = {}
     for metric_name, metric_values in metrics.items():
         finite_values = metric_values[np.isfinite(metric_values)]
         metric_summaries[metric_name] = {
-            "mean": float(np.mean(finite_values)) if finite_values.size else None,
+            "mean": float(np.nanmean(finite_values)) if finite_values.size else None,
             "finite_values": int(finite_values.size),
             "evaluation_values": int(np.count_nonzero(evaluation_mask)),
             "total_values": int(metric_values.size),
@@ -329,10 +341,9 @@ def save_window_predictions(
         "dataset_config": ds_config,
         "aggregation": "mean over the shared Seasonal Naive MASE evaluation grid",
         "evaluation_grid": config["evaluation_grid"],
+        "prediction_outputs": prediction_outputs,
         "metrics": metric_summaries,
     }
-    if launch_id:
-        metrics_summary["launch_id"] = launch_id
     if model_hyperparams and "model" in model_hyperparams:
         metrics_summary["model"] = model_hyperparams["model"]
     if inference_seconds is not None:

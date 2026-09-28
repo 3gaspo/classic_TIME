@@ -20,7 +20,7 @@ time_stage_start summarize
 time_task_start "foundation_model_summary outputs=$TIME_OUTPUTS"
 
 tasks_root="$TIME_OUTPUTS/foundation_models/tasks"
-summary_root="$TIME_OUTPUTS/reports/foundation_models/$TIME_LAUNCH_ID"
+summary_root="$TIME_OUTPUTS/foundation_models/reports"
 
 summary_command=(
     uv run --no-sync python
@@ -30,9 +30,9 @@ summary_command=(
     --models "${FOUNDATION_MODELS[@]}"
     --model-status seasonal_naive=completed,0
     --launch-id "$TIME_LAUNCH_ID"
-    --status-dir "$TIME_LOGS/workflow_status/foundation_models/$TIME_LAUNCH_ID"
-    --config-policy "${TIME_CONFIG_POLICY:-error}"
-    --repeat-policy "${TIME_REPEAT_POLICY:-selected}"
+    --status-dir "$TIME_LOGS/foundation_models/workflow_status/foundation_models"
+    --config-policy "${TIME_CONFIG_POLICY:-latest}"
+    --repeat-policy "${TIME_REPEAT_POLICY:-latest}"
     --csv "$summary_root/foundation_model_summary.csv"
     --markdown "$summary_root/foundation_model_summary.md"
 )
@@ -46,10 +46,10 @@ fi
 time_task_complete
 time_stage_complete
 
-status_root="$TIME_LOGS/workflow_status/foundation_models/$TIME_LAUNCH_ID"
+status_root="$TIME_LOGS/foundation_models/workflow_status/foundation_models"
 incomplete_models=()
 for model in "${FOUNDATION_LEARNED_MODELS[@]}"; do
-    status_file="$status_root/$model.status"
+    status_file="$status_root/${TIME_LAUNCH_ID}__${model}.status"
     state=""
     exit_code=""
     if [ -f "$status_file" ]; then
@@ -66,7 +66,7 @@ if [ "${#incomplete_models[@]}" -gt 0 ]; then
 fi
 
 time_stage_start feature_plot
-analysis_root="$TIME_OUTPUTS/reports/foundation_models/$TIME_LAUNCH_ID/feature_analysis"
+analysis_root="$TIME_OUTPUTS/foundation_models/reports/feature_analysis"
 time_task_start "mase_vs_features features=$TIME_METADATA/stl_features output=$analysis_root"
 plot_command=(
     uv run --no-sync python
@@ -77,8 +77,8 @@ plot_command=(
     --output "$analysis_root/mase_vs_features.svg"
     --models "${FOUNDATION_LEARNED_MODELS[@]}"
     --launch-id "$TIME_LAUNCH_ID"
-    --config-policy "${TIME_CONFIG_POLICY:-error}"
-    --repeat-policy "${TIME_REPEAT_POLICY:-selected}"
+    --config-policy "${TIME_CONFIG_POLICY:-latest}"
+    --repeat-policy "${TIME_REPEAT_POLICY:-latest}"
     --top 5
 )
 

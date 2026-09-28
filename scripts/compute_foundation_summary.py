@@ -32,8 +32,8 @@ def load_result_cells(
     launch_id: str | None = None,
     target_modes: set[str] | None = None,
     config_filters: dict | None = None,
-    config_policy: str = "error",
-    repeat_policy: str = "selected",
+    config_policy: str = "latest",
+    repeat_policy: str = "latest",
     task_specific_model_fields: set[str] | None = None,
 ) -> list[dict]:
     """Load selected completed manifests for dataset/frequency/horizon cells."""
@@ -51,14 +51,14 @@ def load_result_cells(
     for run_dir, manifest in selected:
         identity = manifest["identity"]
         summary_path = run_dir / "metrics_summary.json"
-        config_path = summary_path.with_name("config.json")
-        config = json.loads(config_path.read_text(encoding="utf-8"))
+        config = manifest.get("artifact_metadata", {}).get("evaluation")
+        if not isinstance(config, dict):
+            raise ValueError(f"Run manifest lacks evaluation artifact metadata: {run_dir}")
         summary = json.loads(summary_path.read_text(encoding="utf-8"))
         mase_summary = summary.get("metrics", {}).get("MASE", {})
+        prediction_outputs = summary.get("prediction_outputs", {})
         mase = mase_summary.get("mean")
-        if mase is None:
-            continue
-        mase = float(mase)
+        mase = np.nan if mase is None else float(mase)
         inference_seconds = config.get("inference_seconds")
         if inference_seconds is not None:
             inference_seconds = float(inference_seconds)
@@ -77,8 +77,11 @@ def load_result_cells(
                 "MASE_finite_values": int(mase_summary["finite_values"]),
                 "MASE_evaluation_values": int(mase_summary["evaluation_values"]),
                 "MASE_total_values": int(mase_summary["total_values"]),
+                "prediction_nan_values": int(prediction_outputs.get("evaluation_nan_values", 0)),
+                "prediction_values": int(prediction_outputs.get("evaluation_values", 0)),
                 "evaluation_grid": dict(summary["evaluation_grid"]),
                 "inference_seconds": inference_seconds,
+                "prediction_length": int(config["prediction_length"]),
                 "manifest_path": str(run_dir / "manifest.json"),
                 "scientific_config": selection.get(
                     "scientific_config",
@@ -127,9 +130,9 @@ def _effective_cells(cells: list[dict]) -> list[dict]:
                 "target_mode": key[2],
                 "dataset_id": key[3],
                 "horizon": key[4],
-                "MASE": float(np.mean([cell["MASE"] for cell in repeats])),
-                "MASE_std": float(np.mean([cell.get("MASE_std", np.nan) for cell in repeats])),
-                "MASE_variance": float(np.mean([cell.get("MASE_variance", np.nan) for cell in repeats])),
+                "MASE": float(np.nanmean([cell["MASE"] for cell in repeats])),
+                "MASE_std": float(np.nanmean([cell.get("MASE_std", np.nan) for cell in repeats])),
+                "MASE_variance": float(np.nanmean([cell.get("MASE_variance", np.nan) for cell in repeats])),
                 "MASE_finite_values": sum(
                     cell["MASE_finite_values"] for cell in repeats
                 ),
@@ -139,9 +142,15 @@ def _effective_cells(cells: list[dict]) -> list[dict]:
                 "MASE_total_values": sum(
                     cell["MASE_total_values"] for cell in repeats
                 ),
+                "prediction_nan_values": sum(
+                    cell["prediction_nan_values"] for cell in repeats
+                ),
+                "prediction_values": sum(
+                    cell["prediction_values"] for cell in repeats
+                ),
                 "evaluation_grid": repeats[0]["evaluation_grid"],
                 "inference_seconds": (
-                    float(np.mean(timed)) if len(timed) == len(repeats) else None
+                    float(np.nanmean(timed)) if len(timed) == len(repeats) else None
                 ),
             }
         )
@@ -172,9 +181,9 @@ def _effective_cells(cells: list[dict]) -> list[dict]:
                 "target_mode": key[2],
                 "dataset_id": key[3],
                 "horizon": key[4],
-                "MASE": float(np.mean([cell["MASE"] for cell in configs])),
-                "MASE_std": float(np.mean([cell.get("MASE_std", np.nan) for cell in configs])),
-                "MASE_variance": float(np.mean([cell.get("MASE_variance", np.nan) for cell in configs])),
+                "MASE": float(np.nanmean([cell["MASE"] for cell in configs])),
+                "MASE_std": float(np.nanmean([cell.get("MASE_std", np.nan) for cell in configs])),
+                "MASE_variance": float(np.nanmean([cell.get("MASE_variance", np.nan) for cell in configs])),
                 "MASE_finite_values": sum(
                     cell["MASE_finite_values"] for cell in configs
                 ),
@@ -184,9 +193,15 @@ def _effective_cells(cells: list[dict]) -> list[dict]:
                 "MASE_total_values": sum(
                     cell["MASE_total_values"] for cell in configs
                 ),
+                "prediction_nan_values": sum(
+                    cell["prediction_nan_values"] for cell in configs
+                ),
+                "prediction_values": sum(
+                    cell["prediction_values"] for cell in configs
+                ),
                 "evaluation_grid": configs[0]["evaluation_grid"],
                 "inference_seconds": (
-                    float(np.mean(timed)) if len(timed) == len(configs) else None
+                    float(np.nanmean(timed)) if len(timed) == len(configs) else None
                 ),
             }
         )
@@ -194,13 +209,16 @@ def _effective_cells(cells: list[dict]) -> list[dict]:
     return effective_cells
 
 
-def _geometric_mean(values: list[float]) -> float:
+def _geometric_mean(values: list[float]) -> float | None:
     array = np.asarray(values, dtype=np.float64)
-    if not len(array) or not np.isfinite(array).all() or np.any(array < 0):
-        raise ValueError("scaled MASE requires finite non-negative task values")
+    if np.isinf(array).any() or np.any(array[np.isfinite(array)] < 0):
+        raise ValueError("scaled MASE requires non-negative task values or NaN")
+    array = array[np.isfinite(array)]
+    if not len(array):
+        return None
     if np.any(array == 0):
         return 0.0
-    return float(np.exp(np.mean(np.log(array))))
+    return float(np.exp(np.nanmean(np.log(array))))
 
 
 def summarize_cells(cells: list[dict], seasonal_naive_cells: list[dict]) -> list[dict]:
@@ -212,7 +230,7 @@ def summarize_cells(cells: list[dict], seasonal_naive_cells: list[dict]) -> list
     for cell in baseline_cells:
         baseline_by_task[(cell["dataset_id"], cell["horizon"])].append(cell["MASE"])
     baseline = {
-        key: float(np.mean(values)) for key, values in baseline_by_task.items()
+        key: float(np.nanmean(values)) for key, values in baseline_by_task.items()
     }
     baseline_grids = {
         (cell["dataset_id"], cell["horizon"]): cell["evaluation_grid"]
@@ -269,10 +287,20 @@ def summarize_cells(cells: list[dict], seasonal_naive_cells: list[dict]) -> list
                 "MASE_total_values": sum(
                     cell["MASE_total_values"] for cell in model_cells
                 ),
+                "prediction_nan_values": sum(
+                    cell["prediction_nan_values"] for cell in model_cells
+                ),
+                "prediction_values": sum(
+                    cell["prediction_values"] for cell in model_cells
+                ),
             }
         )
 
-    return sorted(rows, key=lambda row: (row["scaled_MASE"], row["model"]))
+    return sorted(rows, key=lambda row: (
+        row["scaled_MASE"] is None,
+        row["scaled_MASE"] if row["scaled_MASE"] is not None else np.inf,
+        row["model"],
+    ))
 
 
 
@@ -286,8 +314,7 @@ def write_performance_artifacts(cells: list[dict], seasonal_cells: list[dict], d
     horizons = {}
     for cell in [*cells, *seasonal_cells]:
         key = (cell["dataset_id"], cell["horizon"])
-        config = json.loads(Path(cell["manifest_path"]).with_name("config.json").read_text(encoding="utf-8"))
-        horizon = int(config["prediction_length"])
+        horizon = int(cell["prediction_length"])
         if key in horizons and horizons[key] != horizon:
             raise ValueError(f"Different forecast horizons for {key}")
         horizons[key] = horizon
@@ -301,10 +328,12 @@ def write_performance_artifacts(cells: list[dict], seasonal_cells: list[dict], d
         times = [cell["inference_seconds"] for cell in selected]
         baselines[key] = {
             "model": "seasonal_naive", "dataset_id": key[0], "horizon": key[1],
-            "MASE": float(np.mean([cell["MASE"] for cell in selected])),
-            "MASE_std": float(np.mean([cell.get("MASE_std", np.nan) for cell in selected])),
-            "MASE_variance": float(np.mean([cell.get("MASE_variance", np.nan) for cell in selected])),
-            "inference_seconds": float(np.mean(times)) if all(value is not None for value in times) else None,
+            "MASE": float(np.nanmean([cell["MASE"] for cell in selected])),
+            "MASE_std": float(np.nanmean([cell.get("MASE_std", np.nan) for cell in selected])),
+            "MASE_variance": float(np.nanmean([cell.get("MASE_variance", np.nan) for cell in selected])),
+            "inference_seconds": float(np.nanmean(times)) if all(value is not None for value in times) else None,
+            "prediction_nan_values": sum(cell["prediction_nan_values"] for cell in selected),
+            "prediction_values": sum(cell["prediction_values"] for cell in selected),
         }
     tasks = []
     for cell in [*effective, *baselines.values()]:
@@ -318,6 +347,8 @@ def write_performance_artifacts(cells: list[dict], seasonal_cells: list[dict], d
             "MASE_variance": cell.get("MASE_variance", np.nan),
             "seasonal_MASE_variance": baselines[key].get("MASE_variance", np.nan),
             "inference_seconds": cell["inference_seconds"],
+            "prediction_nan_values": cell["prediction_nan_values"],
+            "prediction_values": cell["prediction_values"],
         })
     return write_performance_report(
         tasks, destination, reference="seasonal_naive", scaled_aggregation="geometric",
@@ -326,19 +357,23 @@ def write_performance_artifacts(cells: list[dict], seasonal_cells: list[dict], d
 
 
 
-def load_model_statuses(status_dir: Path | None) -> dict[str, dict[str, str]]:
+def load_model_statuses(
+    status_dir: Path | None, launch_id: str | None
+) -> dict[str, dict[str, str]]:
     """Load terminal per-model workflow status for one launch when available."""
     if status_dir is None or not status_dir.is_dir():
         return {}
 
     statuses = {}
-    for status_path in sorted(status_dir.glob("*.status")):
+    launch_name = re.sub(r"[^A-Za-z0-9_.-]+", "_", launch_id) if launch_id else None
+    pattern = f"{launch_name}__*.status" if launch_name else "*.status"
+    for status_path in sorted(status_dir.glob(pattern)):
         values = {}
         for line in status_path.read_text(encoding="utf-8").splitlines():
             key, separator, value = line.partition("=")
             if separator:
                 values[key] = value
-        statuses[status_path.stem] = values
+        statuses[status_path.stem.partition("__")[2] or status_path.stem] = values
     return statuses
 
 
@@ -382,6 +417,8 @@ def add_model_status(
                     "MASE_finite_values": 0,
                     "MASE_evaluation_values": 0,
                     "MASE_total_values": 0,
+                    "prediction_nan_values": 0,
+                    "prediction_values": 0,
                 }
             )
     for row in rows:
@@ -418,6 +455,8 @@ def write_csv(rows: list[dict], path: Path) -> None:
         "MASE_finite_values",
         "MASE_evaluation_values",
         "MASE_total_values",
+        "prediction_nan_values",
+        "prediction_values",
     ]
     with path.open("w", encoding="utf-8", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=fieldnames)
@@ -435,8 +474,8 @@ def write_markdown(rows: list[dict], path: Path) -> None:
         "Inference seconds are summed over the same test forecasting tasks; "
         "a blank total means at least one task lacks timing metadata.",
         "",
-        "| Model | Target mode | State | Exit | Scaled MASE (GM) | Inference seconds | Datasets | Tasks | Timed tasks | MASE finite/grid/total |",
-        "|---|---|---|---:|---:|---:|---:|---:|---:|---:|",
+        "| Model | Target mode | State | Exit | Scaled MASE (GM) | Inference seconds | Datasets | Tasks | Timed tasks | MASE finite/grid/total | Prediction NaNs/values |",
+        "|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for row in rows:
         seconds = row["inference_seconds"]
@@ -446,7 +485,8 @@ def write_markdown(rows: list[dict], path: Path) -> None:
             f"{'' if mase is None else f'{mase:.6f}'} | "
             f"{'' if seconds is None else f'{seconds:.3f}'} | "
             f"{row['datasets']} | {row['tasks']} | {row['timed_tasks']} | "
-            f"{row['MASE_finite_values']}/{row['MASE_evaluation_values']}/{row['MASE_total_values']} |"
+            f"{row['MASE_finite_values']}/{row['MASE_evaluation_values']}/{row['MASE_total_values']} | "
+            f"{row['prediction_nan_values']}/{row['prediction_values']} |"
         )
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
@@ -524,7 +564,7 @@ def main() -> None:
         "--csv",
         type=Path,
         default=None,
-        help="CSV table (default: outputs/reports/<experiment>/<launch>/foundation_model_summary.csv)",
+        help="CSV table (default: outputs/<experiment>/reports/foundation_model_summary.csv)",
     )
     parser.add_argument(
         "--markdown",
@@ -559,13 +599,13 @@ def main() -> None:
     parser.add_argument(
         "--config-policy",
         choices=("error", "distinct", "latest", "average"),
-        default="error",
+        default="latest",
         help="How to handle different matching scientific configs",
     )
     parser.add_argument(
         "--repeat-policy",
         choices=("selected", "latest", "distinct", "average"),
-        default="selected",
+        default="latest",
         help="How to select or aggregate exact repeated configurations",
     )
     parser.add_argument(
@@ -586,7 +626,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    report_root = outputs_root() / "reports" / foundation_experiment_name() / (args.launch_id or "manual")
+    report_root = outputs_root() / foundation_experiment_name() / "reports"
     args.csv = args.csv or report_root / "foundation_model_summary.csv"
     args.markdown = args.markdown or args.csv.parent / "foundation_model_summary.md"
     baseline_root = args.seasonal_naive_results_dir or args.results_dir
@@ -619,7 +659,7 @@ def main() -> None:
     if "seasonal_naive" in models:
         summary_cells.extend(seasonal_naive_cells)
     metric_rows = summarize_cells(summary_cells, seasonal_naive_cells)
-    statuses = load_model_statuses(args.status_dir)
+    statuses = load_model_statuses(args.status_dir, args.launch_id)
     statuses.update(parse_model_statuses(args.model_status))
     rows = add_model_status(metric_rows, args.models, statuses, args.launch_id)
     if not rows:

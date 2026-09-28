@@ -26,7 +26,7 @@ else
     source "$PROJECT_ROOT/src/slurm/runtime_paths.sh"
     front="$PROJECT_ROOT/slurm/dgx/dataset_diagnostics.slurm"
 fi
-mkdir -p "$TIME_LOGS"
+mkdir -p "$TIME_LOGS/dataset_diagnostics/slurm"
 
 launch_id="${TIME_LAUNCH_ID:-${cluster}_dataset_diagnostics_$(date -u '+%Y%m%dT%H%M%SZ')_$$}"
 job_id="$(
@@ -38,6 +38,6 @@ job_id="${job_id%%;*}"
 
 echo "dataset diagnostics submitted job_id=$job_id launch_id=$launch_id"
 echo "shared metadata: $TIME_METADATA"
-echo "aggregate log export: $TIME_LOGS/dataset_metadata/$job_id"
+echo "aggregate log export: $TIME_LOGS/dataset_diagnostics/dataset_metadata/${job_id}__*"
 
 

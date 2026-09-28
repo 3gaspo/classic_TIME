@@ -23,21 +23,22 @@ else
     source "$PROJECT_ROOT/src/slurm/runtime_paths.sh"
 fi
 
-model_status_root="$TIME_LOGS/workflow_status/foundation_models"
+model_status_root="$TIME_LOGS/foundation_models/workflow_status/foundation_models"
 if [ -z "$launch_id" ]; then
-    launch_path="$(ls -1dt "$model_status_root"/* 2>/dev/null | head -n 1 || true)"
-    if [ -z "$launch_path" ]; then
+    latest_status="$(ls -1t "$model_status_root"/*.status 2>/dev/null | head -n 1 || true)"
+    if [ -z "$latest_status" ]; then
         echo "no foundation-model workflow status found below $model_status_root" >&2
         exit 1
     fi
-    launch_id="$(basename "$launch_path")"
+    launch_id="$(sed -n 's/^launch_id=//p' "$latest_status")"
 fi
+launch_name="${launch_id//[^a-zA-Z0-9_.-]/_}"
 
 echo "foundation-model status cluster=$cluster launch_id=$launch_id logs=$TIME_LOGS"
 for workflow in foundation_models foundation_summary; do
-    status_dir="$TIME_LOGS/workflow_status/$workflow/$launch_id"
+    status_dir="$TIME_LOGS/foundation_models/workflow_status/$workflow"
     [ -d "$status_dir" ] || continue
-    for status_file in "$status_dir"/*.status; do
+    for status_file in "$status_dir/${launch_name}__"*.status; do
         [ -f "$status_file" ] || continue
         task="$(sed -n 's/^task=//p' "$status_file")"
         state="$(sed -n 's/^state=//p' "$status_file")"
@@ -54,5 +55,3 @@ if [[ "$job_id" =~ ^[0-9]+$ ]] && command -v squeue >/dev/null 2>&1; then
     echo
     squeue -j "$job_id" || true
 fi
-
-

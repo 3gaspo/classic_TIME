@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=time_summary
 #SBATCH --gres=gpu:1
-#SBATCH --output=logs/%x_%j.out
-#SBATCH --error=logs/%x_%j.err
+#SBATCH --output=logs/dgx/foundation_models/slurm/%x_%j.out
+#SBATCH --error=logs/dgx/foundation_models/slurm/%x_%j.err
 #SBATCH --time=01:00:00
 #SBATCH --partition=h100
 #SBATCH --nodes=1

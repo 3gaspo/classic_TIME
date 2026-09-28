@@ -146,8 +146,9 @@ def main() -> None:
             second_config = _allocate(root, value=2)
             assert second_config.action == "new" and second_config.run_dir.name == "run_1"
             _complete(second_config)
+            assert select_completed_runs(root.parent)[0][0] == second_config.run_dir
             try:
-                select_completed_runs(root.parent)
+                select_completed_runs(root.parent, config_policy="error")
             except ManifestError:
                 pass
             else:
@@ -193,7 +194,7 @@ def main() -> None:
             _complete(hourly)
             _complete(daily)
             try:
-                select_completed_runs(task_specific_root)
+                select_completed_runs(task_specific_root, config_policy="error")
             except ManifestError:
                 pass
             else:
@@ -201,6 +202,7 @@ def main() -> None:
             assert len(
                 select_completed_runs(
                     task_specific_root,
+                    config_policy="error",
                     task_specific_model_fields={"value"},
                 )
             ) == 2
@@ -218,7 +220,7 @@ def main() -> None:
             else:
                 raise AssertionError("same-task configuration ambiguity must still fail")
 
-            overwritten = _allocate(root, value=3, policy="overwrite_path")
+            overwritten = _allocate(root, value=3, policy="replace")
             assert overwritten.action == "overwrite"
             assert overwritten.run_dir == repeat.run_dir
             assert (overwritten.run_dir / "manifest_history").is_dir()
@@ -228,11 +230,13 @@ def main() -> None:
             source_root = Path(temporary) / "foundation_source"
             source = _allocate(source_root)
             with source:
-                (source.run_dir / "config.json").write_text("{}", encoding="utf-8")
                 (source.run_dir / "metrics_summary.json").write_text(
                     "{}", encoding="utf-8"
                 )
-                source.complete(["config.json", "metrics_summary.json"])
+                source.complete(
+                    ["metrics_summary.json"],
+                    artifact_metadata={"evaluation": {"prediction_length": 8}},
+                )
             imported_root = Path(temporary) / "channel_destination"
             imported = _allocate(
                 imported_root,
@@ -243,8 +247,8 @@ def main() -> None:
             imported_manifest = load_manifest(imported.run_dir)
             assert imported_manifest["experiment"] == "channels_comparison"
             assert imported_manifest["provenance"]["reused_from_experiment"] == "foundation_models"
-            assert (imported.run_dir / "config.json").is_file()
             assert (imported.run_dir / "metrics_summary.json").is_file()
+            assert imported.manifest["artifact_metadata"]["evaluation"]["prediction_length"] == 8
 
             fallback_root = Path(temporary) / "fallback_destination"
             os.environ["TIME_REUSE_IF_AVAILABLE_FROM"] = str(
